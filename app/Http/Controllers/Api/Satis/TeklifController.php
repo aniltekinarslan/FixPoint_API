@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api\Muhasebe;
+namespace App\Http\Controllers\Api\Satis;
 
 use App\Http\Controllers\Controller;
-use App\Models\Muhasebe\MCari;
+use App\Models\Satis\Teklif;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -12,10 +12,10 @@ use Illuminate\Http\JsonResponse;
 use DB;
 use Validator;
 use Exception;
-use App\Models\Muhasebe\MCariOzelFiyat;
 use Illuminate\Validation\Rule;
+use App\Models\Satis\TeklifSatir;
 
-class MCariController extends Controller
+class TeklifController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -25,14 +25,28 @@ class MCariController extends Controller
      */
     public function index(Request $request)
     {
-        $data = MCari::where(function ($q) use ($request)
+        $data = Teklif::where(function ($q) use ($request)
         {
-            $q->where('SirketKod', auth('api')->user()->Sirket_Kod);
+            $q->where('Sirket_Kod', auth('api')->user()->Sirket_Kod);
 
-            if ($request->CariKod && strlen($request->CariKod) > 0)
-                $q->where('CariKod', 'like', $request->CariKod . '%');
+            if ($request->Nosu && strlen($request->Nosu) > 0)
+                $q->where('Nosu', 'like', $request->Nosu . '%');
 
-        })->orderBy('CariKod', 'asc')->paginate($request->size ?? 10);
+            if (!($request->Aciklar && $request->Kapalilar && $request->Aciklar == 'E' && $request->Kapalilar == 'E'))
+            {
+                if ($request->Aciklar && $request->Aciklar == 'E')
+                    $q->where('Kapan', 'H');
+
+                if ($request->Kapalilar && $request->Kapalilar == 'E')
+                    $q->where('Kapan', 'E');
+            }
+
+            if ($request->Iptaller && strlen($request->Iptaller) > 0)
+                $q->where('Iptal', 'E');
+            else
+                $q->where('Iptal', 'H');
+
+        })->orderBy('id', 'asc')->paginate($request->size ?? 10);
 
         return response()->json(['status' => true, 'data' => $data], 200);
     }
@@ -46,12 +60,12 @@ class MCariController extends Controller
     public function store(Request $request)
     {
         $input = $request->all();
-        $input['SirketKod'] = auth('api')->user()->Sirket_Kod;
+        $input['Sirket_Kod'] = auth('api')->user()->Sirket_Kod;
 
         $validator = Validator::make($input, [
-            'CariKod' => Rule::unique('m_CariKart')->where(function ($query) use ($request, $input)
+            'Nosu' => Rule::unique('m_CariKart')->where(function ($query) use ($request, $input)
             {
-                return $query->where('SirketKod', $input['SirketKod'])->where('CariKod', $request->CariKod);
+                return $query->where('Sirket_Kod', $input['Sirket_Kod'])->where('Nosu', $request->Nosu);
             }),
             'CariAdi' => 'required|string|min:1|max:65',
             'CariHesapTipi' => 'required|string|min:1|max:18',
@@ -60,37 +74,37 @@ class MCariController extends Controller
         if ($validator->errors()->count() || $validator->fails())
             return response(['status' => false, 'errors' => $validator->errors()->toArray()], 402);
 
-        $MCari = MCari::create($input);
+        $Teklif = Teklif::create($input);
 
         return response([
                             'status' => true,
-                            'data' => $MCari,
-                            'message' => 'Cari Oluşturuldu'
+                            'data' => $Teklif,
+                            'message' => 'Teklif Oluşturuldu'
                         ], 200);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param $MCari
+     * @param $Teklif
      * @return JsonResponse
      */
-    public function show($MCari)
+    public function show($Teklif)
     {
-        $MCari = MCari::with(['ozel_fiyatlandirma_listesi'])->where('SirketKod', auth('api')->user()->Sirket_Kod)->where('CariKod', $MCari)->first();
-        if (!$MCari)
-            return response()->json(['status' => false, 'errors' => ['Cari Bulunamadı! Kod: ' . $MCari]], 402);
+        $Teklif = Teklif::with(['satirlar'])->where('Sirket_Kod', auth('api')->user()->Sirket_Kod)->where('Nosu', $Teklif)->first();
+        if (!$Teklif)
+            return response()->json(['status' => false, 'errors' => ['Teklif Bulunamadı! Kod: ' . $Teklif]], 402);
 
-        return response()->json(['status' => true, 'data' => $MCari], 200);
+        return response()->json(['status' => true, 'data' => $Teklif], 200);
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param MCari $MCari
+     * @param Teklif $Teklif
      * @return void
      */
-    public function edit(MCari $MCari)
+    public function edit(Teklif $Teklif)
     {
         //
     }
@@ -99,18 +113,18 @@ class MCariController extends Controller
      * Update the specified resource in storage.
      *
      * @param Request $request
-     * @param MCari $MCari
+     * @param Teklif $Teklif
      * @return ResponseFactory|Response
      */
-    public function update(Request $request, $MCari)
+    public function update(Request $request, $Teklif)
     {
-        $MCari = MCari::where('SirketKod', auth('api')->user()->Sirket_Kod)->where('CariKod', $MCari)->first();
-        if (!$MCari)
-            return response()->json(['status' => false, 'errors' => ['Cari Bulunamadı! CariKod: ' . $MCari]], 402);
+        $Teklif = Teklif::where('Sirket_Kod', auth('api')->user()->Sirket_Kod)->where('Nosu', $Teklif)->first();
+        if (!$Teklif)
+            return response()->json(['status' => false, 'errors' => ['Teklif Bulunamadı! Nosu: ' . $Teklif]], 402);
 
         $input = $request->all();
 
-        $props = $MCari->column_defaults();
+        $props = $Teklif->column_defaults();
         foreach ($input as $key => $val)
         {
             if (is_null($input[$key]))
@@ -119,7 +133,7 @@ class MCariController extends Controller
 
 
         $validator = Validator::make($input, [
-            'CariKod' => 'required|string|min:1|max:25',
+            'Nosu' => 'required|string|min:1|max:25',
             'CariAdi' => 'required|string|min:1|max:65',
             'CariHesapTipi' => 'required|string|min:1|max:18',
         ], []);
@@ -127,48 +141,37 @@ class MCariController extends Controller
         if ($validator->errors()->count() || $validator->fails())
             return response(['status' => false, 'errors' => $validator->errors()->toArray()], 402);
 
-        $MCari->update($input);
+        $Teklif->update($input);
 
         return response(['status' => true,
-                            'data' => $MCari,
-                            'title' => $MCari->CariAdi,
-                            'message' => $MCari->CariKod . ' Güncellendi!'
+                            'data' => $Teklif,
+                            'title' => $Teklif->CariAdi,
+                            'message' => $Teklif->Nosu . ' Güncellendi!'
                         ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param MCari $MCari
+     * @param Teklif $Teklif
      * @return ResponseFactory|Response
      * @throws Exception
      */
-    public function destroy(MCari $MCari)
+    public function destroy(Teklif $Teklif)
     {
-        $response = DB::select("EXEC Web_MCariKontrol @spSirketKod = ?, @spCariKod = ?", [auth('api')->user()->Sirket_Kod, $MCari->CariKod])[0];
+        $response = DB::select("EXEC Web_TeklifKontrol @spSirket_Kod = ?, @spNosu = ?", [auth('api')->user()->Sirket_Kod, $Teklif->Nosu])[0];
 
         if (!$response->status)
             return response(['status' => false,
                                 'title' => 'Hata',
-                                'message' => $MCari->CariKod . ' - ' . $response->message], 200);
+                                'message' => $Teklif->Nosu . ' - ' . $response->message], 200);
 
-        $response = $MCari->delete();
+        $response = $Teklif->delete();
 
         return response(['status' => $response,
                             'title' => 'Başarılı',
-                            'message' => $MCari->CariAdi . ' Cari Silindi!'
+                            'message' => $Teklif->CariAdi . ' Teklif Silindi!'
                         ], 200);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param MCariOzelFiyat $MCariOzelFiyat
-     * @return JsonResponse
-     */
-    public function getOzelBirim(MCariOzelFiyat $MCariOzelFiyat)
-    {
-        return response()->json(['status' => true, 'data' => $MCariOzelFiyat], 200);
     }
 
     /**
@@ -179,12 +182,12 @@ class MCariController extends Controller
      */
     public function search(Request $request)
     {
-        $data = MCari::where(function ($q) use ($request)
+        $data = Teklif::where(function ($q) use ($request)
         {
-            $q->where('SirketKod', auth('api')->user()->Sirket_Kod);
+            $q->where('Sirket_Kod', auth('api')->user()->Sirket_Kod);
 
-            if ($request->CariKod && strlen($request->CariKod) > 0)
-                $q->where('CariKod', 'like', $request->CariKod . '%');
+            if ($request->Nosu && strlen($request->Nosu) > 0)
+                $q->where('Nosu', 'like', $request->Nosu . '%');
 
             if ($request->CariAdi && strlen($request->CariAdi) > 0)
                 $q->where('CariAdi', 'like', '%' . $request->CariAdi . '%');
@@ -221,11 +224,36 @@ class MCariController extends Controller
         return response()->json(['status' => true, 'data' => $data], 200);
     }
 
-    public function getnew(Request $request)
+    /**
+     * Display a listing of the resource.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function urun_bazli_liste(Request $request)
     {
-        $data = MCari::where('SirketKod', auth('api')->user()->Sirket_Kod)
-            ->where('CariKod', 'like', $request->CariKod . '%')
-            ->orderBy('CariKod', 'desc')->pluck('CariKod')->first();
+        $data = TeklifSatir::whereHas('teklif', function($q) use ($request)
+        {
+            $q->where('Sirket_Kod', auth('api')->user()->Sirket_Kod);
+
+            if ($request->Nosu && strlen($request->Nosu) > 0)
+                $q->where('Nosu', 'like', $request->Nosu . '%');
+
+            if (!($request->Aciklar && $request->Kapalilar && $request->Aciklar == 'E' && $request->Kapalilar == 'E'))
+            {
+                if ($request->Aciklar && $request->Aciklar == 'E')
+                    $q->where('Kapan', 'H');
+
+                if ($request->Kapalilar && $request->Kapalilar == 'E')
+                    $q->where('Kapan', 'E');
+            }
+
+            if ($request->Iptaller && strlen($request->Iptaller) > 0)
+                $q->where('Iptal', 'E');
+            else
+                $q->where('Iptal', 'H');
+
+        })->paginate($request->size ?? 10);
 
         return response()->json(['status' => true, 'data' => $data], 200);
     }

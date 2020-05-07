@@ -23,17 +23,19 @@ Route::group(['middleware' => ['jwt.auth']], function () {
         Route::apiResource('StokKontrol/StokKarti', 'Api\StokKontrol\StokKartiController');
         Route::apiResource('StokKontrol/StokHareketleri', 'Api\StokKontrol\StokHareketleriController');
 
+        Route::get('Muhasebe/MCari/getnew', 'Api\Muhasebe\MCariController@getnew');
         Route::get('Muhasebe/MCari/search', 'Api\Muhasebe\MCariController@search');
         Route::apiResource('Muhasebe/MCari', 'Api\Muhasebe\MCariController');
         Route::apiResource('Muhasebe/MCariOzelFiyat', 'Api\Muhasebe\MCariOzelFiyatController');
-
         Route::get('Muhasebe/HesapPlani/search', 'Api\Muhasebe\HesapPlaniController@search');
         Route::apiResource('Muhasebe/HesapPlani', 'Api\Muhasebe\HesapPlaniController');
-
         Route::apiResource('Muhasebe/Doviz', 'Api\Muhasebe\DovizController');
 
-        Route::apiResource('Tanimlamalar/Kullanici', 'Api\Tanimlamalar\KullaniciController');
 
+        Route::get('Satis/Teklif/urunbazliliste', 'Api\Satis\TeklifController@urun_bazli_liste');
+        Route::apiResource('Satis/Teklif', 'Api\Satis\TeklifController');
+
+        Route::apiResource('Tanimlamalar/Kullanici', 'Api\Tanimlamalar\KullaniciController');
         Route::get('Tanimlamalar/ModulTanimlamalari/StokKontrol/MalzemeGrubu/listWithLevel/{groupNo}', 'Api\Tanimlamalar\ModulTanimlamalari\StokKontrol\MalzemeGrubuController@listWithLevel');
         Route::apiResource('Tanimlamalar/ModulTanimlamalari/StokKontrol/MalzemeGrubu', 'Api\Tanimlamalar\ModulTanimlamalari\StokKontrol\MalzemeGrubuController');
 

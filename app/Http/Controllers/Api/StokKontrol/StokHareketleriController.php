@@ -19,7 +19,7 @@ class StokHareketleriController extends Controller
      */
     public function index(Request $request)
     {
-        $data = StokHareketleri::where(function($q) use($request)
+        $data = StokHareketleri::where(function ($q) use ($request)
         {
             $q->where('Sirket_Kod', auth('api')->user()->Sirket_Kod);
 
@@ -33,7 +33,7 @@ class StokHareketleriController extends Controller
                 $q->whereBetween('StokKod', [$request->StokKod1, $request->StokKod2]);
 
             if ($request->VariantKod1 && strlen($request->VariantKod1) > 0)
-                $q->where('VariantKod', 'like', $request->VariantKod1.'%')->where('VariantKod', '>=', $request->VariantKod1);
+                $q->where('VariantKod', 'like', $request->VariantKod1 . '%')->where('VariantKod', '>=', $request->VariantKod1);
 
             if ($request->VariantKod2 && strlen($request->VariantKod2) > 0)
                 $q->where('VariantKod', '<=', $request->VariantKod2);
@@ -52,7 +52,7 @@ class StokHareketleriController extends Controller
 
         })->orderBy('id', 'asc')->paginate($request->size ?? 10);
 
-        return response()->json(['status' =>  true, 'data' => $data], 200);
+        return response()->json(['status' => true, 'data' => $data], 200);
     }
 
     /**
@@ -82,7 +82,7 @@ class StokHareketleriController extends Controller
      */
     public function show(StokHareketleri $StokHareketleri)
     {
-        return response()->json(['status' =>  true, 'data' => $StokHareketleri], 200);
+        return response()->json(['status' => true, 'data' => $StokHareketleri], 200);
     }
 
     /**
